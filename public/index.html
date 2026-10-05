@@ -1,106 +1,169 @@
 <!DOCTYPE html>
 <html lang="mn">
 <head>
-  <meta charset="UTF-8">
-  <title>Оюутнуудын жагсаалт</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Номын сан</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      max-width: 700px;
-      margin: 30px auto;
-    }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
 
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 15px;
-    }
+        h1 {
+            text-align: center;
+        }
 
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-  </style>
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
 
-  <h1>Оюутнуудын жагсаалт</h1>
+    <h1>📚 Миний номын сан</h1>
 
-  <form id="f">
-    <input id="name" placeholder="Нэр" required>
-    <input id="age" type="number" placeholder="Нас" required>
-    <input id="city" placeholder="Хот">
-    <button type="submit">Нэмэх</button>
-  </form>
+    <form id="bookForm">
+        <h2>Шинэ ном нэмэх</h2>
 
-  <p id="msg"></p>
+        <label>Номын нэр:</label>
+        <input
+            type="text"
+            id="title"
+            placeholder="Жишээ: Animal Farm"
+            required
+        >
 
-  <table>
-    <thead>
-      <tr>
-        <th>Нэр</th>
-        <th>Нас</th>
-        <th>Хот</th>
-        <th>Хичээл</th>
-      </tr>
-    </thead>
+        <label>Зохиогч:</label>
+        <input
+            type="text"
+            id="author"
+            placeholder="Жишээ: George Orwell"
+            required
+        >
 
-    <tbody id="tbody"></tbody>
-  </table>
+        <button type="submit">Ном нэмэх</button>
 
-  <script>
-    async function load() {
-      const res = await fetch("/api/students");
-      const list = await res.json();
+        <div class="message" id="message"></div>
+    </form>
 
-      const tbody = document.getElementById("tbody");
-      tbody.innerHTML = "";
+    <h2>📖 Номын жагсаалт</h2>
 
-      list.forEach((s) => {
-        const tr = document.createElement("tr");
+    <ul id="bookList"></ul>
 
-        [s.name, s.age, s.city, s.course].forEach((v) => {
-          const td = document.createElement("td");
-          td.textContent = v ?? "";
-          tr.appendChild(td);
-        });
+    <script>
+        // Номын жагсаалт авах
+        async function loadBooks() {
+            try {
+                const response = await fetch("/books");
+                const books = await response.json();
 
-        tbody.appendChild(tr);
-      });
-    }
+                const bookList = document.getElementById("bookList");
 
-    document.getElementById("f").addEventListener("submit", async (e) => {
-      e.preventDefault();
+                bookList.innerHTML = "";
 
-      const res = await fetch("/api/students", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+                books.forEach(book => {
+                    const li = document.createElement("li");
 
-        body: JSON.stringify({
-          name: document.getElementById("name").value,
-          age: Number(document.getElementById("age").value),
-          city: document.getElementById("city").value
-        })
-      });
+                    li.innerHTML = `
+                        <strong>${book.title}</strong>
+                        <br>
+                        Зохиогч: ${book.author}
+                    `;
 
-      const msg = document.getElementById("msg");
+                    bookList.appendChild(li);
+                });
 
-      if (res.ok) {
-        msg.textContent = "Амжилттай нэмлээ";
-        e.target.reset();
-        load();
-      } else {
-        msg.textContent = (await res.json()).message;
-      }
-    });
+            } catch (error) {
+                console.error(error);
+            }
+        }
 
-    load();
-  </script>
+        // Шинэ ном нэмэх
+        document
+            .getElementById("bookForm")
+            .addEventListener("submit", async function(event) {
+
+                event.preventDefault();
+
+                const title = document.getElementById("title").value;
+                const author = document.getElementById("author").value;
+
+                try {
+                    const response = await fetch("/books", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            title: title,
+                            author: author
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    const message =
+                        document.getElementById("message");
+
+                    if (response.ok) {
+                        message.textContent = "✅ Ном амжилттай нэмэгдлээ!";
+
+                        document.getElementById("bookForm").reset();
+
+                        loadBooks();
+                    } else {
+                        message.textContent =
+                            "❌ " + result.message;
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById("message").textContent =
+                        "❌ Сервертэй холбогдож чадсангүй.";
+                }
+            });
+
+        // Хуудас нээгдэхэд номнуудыг авах
+        loadBooks();
+    </script>
 
 </body>
 </html>

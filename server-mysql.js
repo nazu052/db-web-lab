@@ -13,6 +13,15 @@ const pool = mysql.createPool({
   database: "school_db"
 });
 
+pool.getConnection()
+  .then(connection => {
+    console.log("MySQL-тэй амжилттай холбогдлоо");
+    connection.release();
+  })
+  .catch(err => {
+    console.error("MySQL connection error:", err.message);
+  });
+
 app.get("/api/students", async (req, res) => {
   try {
     const [rows] = await pool.query(`
